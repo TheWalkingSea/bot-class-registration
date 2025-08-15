@@ -79,33 +79,39 @@ async def main(courses: list[str]) -> None:
         while True:
             for course in courses:
                 class_data = await cl.search_course(course)
+                class_data = {section['courseReferenceNumber']: section for section in class_data}
 
                 # Initialization
                 if (course not in before_data):
                     before_data[course] = class_data
                     continue
 
-                # Soft checking if a difference exists
-                before_course_data = before_data[course]
+                # Retrieving class information from before_data
+                before_class_data = before_data[course]
 
-                if (len(before_course_data) == len(class_data)):
-                    continue
-                
-                # Course data changed. Now finding the difference
-                print(f"Course {course} has changed in number of sections")
-                before_course_crns = {section['courseReferenceNumber'] for section in before_course_data}
-                for class_info in class_data:
-                    if (class_info['courseReferenceNumber'] not in before_course_crns):
-                        print(f"New section found: {class_info['courseReferenceNumber']}. Sending webhook")
-                        await send_discord_update(
-                            class_info,
-                            title=f"Course Section Added",
-                            color=discord.Color.green()
-                            )
+                # Hard checking if there is a change in the size of a class
 
-                before_data[course] = class_data
+
+
+                # Soft checking if a difference in the number of classes exists
+
+                if (len(before_class_data) != len(class_data)):
+                    # Course data changed. Now finding the difference
+
+                    print(f"Course {course} has changed in number of sections")
+                    for crn in class_data.keys():
+                        if (crn not in before_class_data):
+                            print(f"New section found: {crn}. Sending webhook")
+                            await send_discord_update(
+                                class_data[crn],
+                                title=f"Course Section Added",
+                                color=discord.Color.green()
+                                )
+
+                    before_data[course] = class_data
             
             await asyncio.sleep(1) # Avoid rate limiting issues
+            input()
 
 if __name__ == '__main__':
     with open('config.json', 'r') as f:
