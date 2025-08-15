@@ -87,10 +87,9 @@ async def main(courses: list[str]) -> None:
 
                 # Soft checking if a difference exists
                 before_course_data = before_data[course]
-                before_data[course].pop() # Debug
 
-                # if (len(before_course_data) == len(class_data)):
-                #     continue
+                if (len(before_course_data) == len(class_data)):
+                    continue
                 
                 # Course data changed. Now finding the difference
                 print(f"Course {course} has changed in number of sections")
