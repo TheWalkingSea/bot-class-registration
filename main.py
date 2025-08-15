@@ -24,8 +24,10 @@ class ClassLookup:
     async def __aexit__(self, exc_type, exc, tb):
         await self.session.close()
 
-    def convert_course_code(self, course_code: str) -> tuple[str, int]:
-        return (course_code[:-4], int(course_code[-4:]))
+    def convert_course_code(self, course_code: str) -> tuple[str, str]:
+        i = 0
+        while (course_code[i].isalpha()): i+= 1
+        return (course_code[:i], course_code[i:])
 
     async def search_course(self, course_code: str):
         subject, coursenum = self.convert_course_code(course_code)
