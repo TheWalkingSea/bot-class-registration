@@ -43,7 +43,7 @@ class ClassLookup:
         }
 
         response = await self.session.get(
-            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/searchResults/searchResults',
+            f'https://{SIGNUP_DOMAIN}/StudentRegistrationSsb/ssb/searchResults/searchResults',
             params=params,
             headers=self.headers
         )
@@ -52,7 +52,7 @@ class ClassLookup:
     async def instantiate_session(self):
         # Request 1
         await self.session.get(
-            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/registration/registration',
+            f'https://{SIGNUP_DOMAIN}/StudentRegistrationSsb/ssb/registration/registration',
             headers=self.headers
         )
 
@@ -68,7 +68,7 @@ class ClassLookup:
             'endDatepicker': '',
         }
         await self.session.post(
-            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/term/search',
+            f'https://{SIGNUP_DOMAIN}/StudentRegistrationSsb/ssb/term/search',
             params=params,
             headers=self.headers,
             data=data,
@@ -152,4 +152,5 @@ if __name__ == '__main__':
         config = json.load(f)
 
     TERM = config['term']
+    SIGNUP_DOMAIN = config['signup_domain_api']
     asyncio.run(main(config['courses']))
