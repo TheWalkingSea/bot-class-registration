@@ -1,8 +1,9 @@
 import aiohttp
 import asyncio
 import json
-from utils import send_discord_update
+from utils import send_discord_update, send_discord_webhook
 import discord
+import datetime
 
 class ClassLookup:
     def __init__(self, session: aiohttp.ClientSession=None):
@@ -78,7 +79,26 @@ async def main(courses: list[str]) -> None:
     async with ClassLookup() as cl:
         while True:
             for course in courses:
-                class_data = await cl.search_course(course)
+                try:
+                    class_data = await cl.search_course(course)
+                except Exception as e:
+                    print(f"Error occurred: {e}. Restarting session...")
+
+                    embed = discord.Embed(
+                        title="Session Error",
+                        description=f"An error occurred while fetching data for course {course}. Restarting session...",
+                        color=discord.Color.red(),
+                        timestamp=datetime.datetime.now()
+                    )
+                    embed.set_footer(
+                        text=config['footer_text'], 
+                        icon_url="https://cdn.discordapp.com/attachments/891493636611641345/1405892671225991311/georgia-tech-seeklogo.png"
+                    )
+                    embed.add_field(name='Traceback', value=f"```{str(e)}```", inline=False)
+
+                    send_discord_webhook(embed)
+                    await cl.close()
+                    await main(courses)
                 class_data = {section['courseReferenceNumber']: section for section in class_data}
 
                 # Initialization
@@ -108,6 +128,7 @@ async def main(courses: list[str]) -> None:
                             )
 
                 # Soft checking if a difference in the number of classes exists
+                print(class_data)
                 if (len(before_class_data) != len(class_data)):
                     # Course data changed. Now finding the difference
 
@@ -124,7 +145,6 @@ async def main(courses: list[str]) -> None:
                     before_data[course] = class_data
             
             await asyncio.sleep(1) # Avoid rate limiting issues
-            input()
 
 if __name__ == '__main__':
     with open('config.json', 'r') as f:
