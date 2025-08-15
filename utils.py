@@ -26,10 +26,11 @@ async def send_discord_update(payload: dict[str, str], *args, **kwargs) -> None:
     meeting_times = ' & '.join(meeting_times)
 
     # Status
-    seats = f"{payload['enrollment']}/{payload['maximumEnrollment']} Seats"
-    waitlist_seats = f"{payload['waitCount']}/{payload['waitCapacity']} Waitlist Seats"
-    status = seats + '\n' + waitlist_seats
-
+    status = f"{payload['enrollment']}/{payload['maximumEnrollment']} Seats"
+    if (payload['waitCapacity']):
+        status += f"\n{payload['waitCount']}/{payload['waitCapacity']} Waitlist Seats"
+    
+    
     embed = discord.Embed(description=description, timestamp=datetime.datetime.now(), *args, **kwargs)
     embed.set_footer(
         text=config['footer_text'], 

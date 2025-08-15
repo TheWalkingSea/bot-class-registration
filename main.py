@@ -88,13 +88,26 @@ async def main(courses: list[str]) -> None:
 
                 # Retrieving class information from before_data
                 before_class_data = before_data[course]
+                # class_data[list(before_class_data.keys())[0]]['enrollment'] -= 1 # Debugging for hard check
+                # before_class_data.pop(list(before_class_data.keys())[0]) # Debugging for soft check
 
                 # Hard checking if there is a change in the size of a class
-
-
+                for crn, section_data in class_data.items():
+                    before_section_data = before_class_data[crn]
+                    # If there is a change in enrollment, maximum enrollment, wait count, or wait capacity -> send a webhook
+                    if (section_data['enrollment'] < before_section_data['enrollment'] 
+                        or section_data['maximumEnrollment'] > before_section_data['maximumEnrollment']
+                        or section_data['waitCount'] < before_section_data['waitCount']
+                        or section_data['waitCapacity'] > before_section_data['waitCapacity']
+                        ):
+                            print(f"Course {course} has changed in section {crn}")
+                            await send_discord_update(
+                                section_data,
+                                title=f"Course Section Updated",
+                                color=discord.Color.orange()
+                            )
 
                 # Soft checking if a difference in the number of classes exists
-
                 if (len(before_class_data) != len(class_data)):
                     # Course data changed. Now finding the difference
 
