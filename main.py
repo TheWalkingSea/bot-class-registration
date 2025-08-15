@@ -126,6 +126,7 @@ async def main(courses: list[str]) -> None:
                                 title=f"Course Section Updated",
                                 color=discord.Color.orange()
                             )
+                            before_data[course] = class_data
 
                 # Soft checking if a difference in the number of classes exists
                 print(class_data)
