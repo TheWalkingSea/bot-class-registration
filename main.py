@@ -1,0 +1,116 @@
+import aiohttp
+import asyncio
+import json
+from utils import send_discord_update
+import discord
+
+class ClassLookup:
+    def __init__(self, session: aiohttp.ClientSession=None):
+        self.session = session
+
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+
+    async def __aenter__(self):
+        if (not self.session): 
+            self.session = aiohttp.ClientSession()
+        
+        await self.instantiate_session()
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.session.close()
+
+    def convert_course_code(self, course_code: str) -> tuple[str, int]:
+        return (course_code[:-4], int(course_code[-4:]))
+
+    async def search_course(self, course_code: str):
+        subject, coursenum = self.convert_course_code(course_code)
+
+        params = {
+            'txt_subject': subject,
+            'txt_courseNumber': str(coursenum),
+            'txt_term': TERM,
+            'startDatepicker': '',
+            'endDatepicker': '',
+            'pageOffset': '0',
+            'pageMaxSize': '100', # Adjust as needed, but 100 is a good maximum page size
+            'sortColumn': 'subjectDescription',
+            'sortDirection': 'asc',
+        }
+
+        response = await self.session.get(
+            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/searchResults/searchResults',
+            params=params,
+            headers=self.headers
+        )
+        return (await response.json())['data']
+
+    async def instantiate_session(self):
+        # Request 1
+        await self.session.get(
+            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/registration/registration',
+            headers=self.headers
+        )
+
+        # Request 2
+        params = {
+            'mode': 'search',
+        }
+        data = {
+            'term': TERM,
+            'studyPath': '',
+            'studyPathText': '',
+            'startDatepicker': '',
+            'endDatepicker': '',
+        }
+        await self.session.post(
+            'https://registration.banner.gatech.edu/StudentRegistrationSsb/ssb/term/search',
+            params=params,
+            headers=self.headers,
+            data=data,
+        )
+    
+async def main(courses: list[str]) -> None:
+    before_data = {}
+    async with ClassLookup() as cl:
+        while True:
+            for course in courses:
+                class_data = await cl.search_course(course)
+
+                # Initialization
+                if (course not in before_data):
+                    before_data[course] = class_data
+                    continue
+
+                # Soft checking if a difference exists
+                before_course_data = before_data[course]
+                before_data[course].pop() # Debug
+
+                # if (len(before_course_data) == len(class_data)):
+                #     continue
+                
+                # Course data changed. Now finding the difference
+                print(f"Course {course} has changed in number of sections")
+                before_course_crns = {section['courseReferenceNumber'] for section in before_course_data}
+                for class_info in class_data:
+                    if (class_info['courseReferenceNumber'] not in before_course_crns):
+                        print(f"New section found: {class_info['courseReferenceNumber']}. Sending webhook")
+                        await send_discord_update(
+                            class_info,
+                            title=f"Course Section Added",
+                            color=discord.Color.green()
+                            )
+
+                before_data[course] = class_data
+            
+            await asyncio.sleep(1) # Avoid rate limiting issues
+
+if __name__ == '__main__':
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+
+    TERM = config['term']
+    asyncio.run(main(config['courses']))
