@@ -24,6 +24,9 @@ class ClassLookup:
     async def __aexit__(self, exc_type, exc, tb):
         await self.session.close()
 
+    async def close(self):
+        await self.session.close()
+
     def convert_course_code(self, course_code: str) -> tuple[str, str]:
         i = 0
         while (course_code[i].isalpha()): i+= 1
@@ -49,7 +52,9 @@ class ClassLookup:
             params=params,
             headers=self.headers
         )
-        return (await response.json())['data']
+        js = await response.json()
+        print(f"Response for {course_code}: {js}")
+        return js['data']
 
     async def instantiate_session(self):
         # Request 1
@@ -84,7 +89,7 @@ async def main(courses: list[str]) -> None:
                 try:
                     class_data = await cl.search_course(course)
                 except Exception as e:
-                    print(f"Error occurred: {e}. Restarting session...")
+                    print(f"Error occurred: {str(e)}. Restarting session...")
 
                     embed = discord.Embed(
                         title="Session Error",
@@ -98,7 +103,7 @@ async def main(courses: list[str]) -> None:
                     )
                     embed.add_field(name='Traceback', value=f"```{str(e)}```", inline=False)
 
-                    send_discord_webhook(embed)
+                    await send_discord_webhook(embed)
                     await cl.close()
                     await main(courses)
                 class_data = {section['courseReferenceNumber']: section for section in class_data}
@@ -131,7 +136,6 @@ async def main(courses: list[str]) -> None:
                             before_data[course] = class_data
 
                 # Soft checking if a difference in the number of classes exists
-                print(class_data)
                 if (len(before_class_data) != len(class_data)):
                     # Course data changed. Now finding the difference
 
