@@ -23,6 +23,9 @@ class ClassLookup:
     
     async def __aexit__(self, exc_type, exc, tb):
         await self.session.close()
+    
+    async def close(self):
+        await self.session.close()
 
     async def close(self):
         await self.session.close()
@@ -106,6 +109,7 @@ async def main(courses: list[str]) -> None:
                     await send_discord_webhook(embed)
                     await cl.close()
                     await main(courses)
+
                 class_data = {section['courseReferenceNumber']: section for section in class_data}
 
                 # Initialization
