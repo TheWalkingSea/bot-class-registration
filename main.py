@@ -59,7 +59,7 @@ class ClassLookup:
         print(f"Response for {course_code}: {js}")
         if (not js['data']): 
             print(f"No data found for {course_code}. Retrying...")
-            return self.search_course(course_code)
+            return await self.search_course(course_code)
         return js['data']
 
     async def instantiate_session(self):
