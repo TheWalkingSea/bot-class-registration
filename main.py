@@ -47,8 +47,15 @@ class ClassLookup:
             'pageOffset': '0',
             'pageMaxSize': '100', # Adjust as needed, but 100 is a good maximum page size
             'sortColumn': 'subjectDescription',
-            'sortDirection': 'asc',
+            'sortDirection': 'asc'
         }
+
+        response = await self.session.post(
+            f'https://{SIGNUP_DOMAIN}/StudentRegistrationSsb/ssb/classSearch/resetDataForm',
+            headers=self.headers
+        )
+        assert (await response.text()) == 'true', 'Failed to reset data form'
+
 
         response = await self.session.get(
             f'https://{SIGNUP_DOMAIN}/StudentRegistrationSsb/ssb/searchResults/searchResults',
@@ -56,11 +63,9 @@ class ClassLookup:
             headers=self.headers
         )
         js = await response.json()
-        print(f"Response for {course_code}: {js}")
-        if (not js['data']): 
-            print(f"No data found for {course_code}. Retrying...")
-            return await self.search_course(course_code)
+        # print(f"Response for {course_code}: {js}")
         return js['data']
+        
 
     async def instantiate_session(self):
         # Request 1
@@ -94,6 +99,9 @@ async def main(courses: list[str]) -> None:
             for course in courses:
                 try:
                     class_data = await cl.search_course(course)
+                    if (not class_data and before_data.get(course)): # Make sure data is not already populated
+                        print(f"No data found for {course}. Retrying...")
+                        continue # Retries on next iteration
                 except Exception as e:
                     print(f"Error occurred: {str(e)}. Restarting session...")
 
@@ -140,11 +148,7 @@ async def main(courses: list[str]) -> None:
                                 )
 
                     before_data[course] = class_data
-                
-                if (len(before_class_data) > len(class_data)):
-                    before_data[course] = class_data
-                    continue
-
+            
                 # Hard checking if there is a change in the size of a class
                 for crn, section_data in class_data.items():
                     before_section_data = before_class_data[crn]
@@ -160,10 +164,15 @@ async def main(courses: list[str]) -> None:
                                 title=f"Course Section Updated",
                                 color=discord.Color.orange()
                             )
-                            before_data[course] = class_data
+                            
+                before_data[course] = class_data
+
+                # import pyperclip
+                # pyperclip.copy(json.dumps(class_data))
+                # print(json.dumps(class_data))
+                # input("Press Enter to continue...")
             
             await asyncio.sleep(1) # Avoid rate limiting issues
-
 if __name__ == '__main__':
     with open('config.json', 'r') as f:
         config = json.load(f)
