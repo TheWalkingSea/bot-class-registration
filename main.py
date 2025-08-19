@@ -56,9 +56,10 @@ class ClassLookup:
             headers=self.headers
         )
         js = await response.json()
-        print(f"Response for {course_code}: {js}")
-        if (not js['data']): 
+        # print(f"Response for {course_code}: {js}")
+        if (not js or not js['data']): 
             print(f"No data found for {course_code}. Retrying...")
+            asyncio.sleep(10)
             return await self.search_course(course_code)
         return js['data']
 
