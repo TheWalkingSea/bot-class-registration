@@ -25,6 +25,11 @@ async def send_discord_update(payload: dict[str, str], *args, **kwargs) -> None:
 
     meeting_times = ' & '.join(meeting_times)
 
+    # Time
+    startTime = datetime.datetime.strptime(payload['meetingsFaculty'][0]['meetingTime']['beginTime'], '%H%M')
+    endTime = datetime.datetime.strptime(payload['meetingsFaculty'][0]['meetingTime']['endTime'], '%H%M')
+    time = f"{startTime.strftime('%I:%M %p')} - {endTime.strftime('%I:%M %p')}"
+
     # Status
     status = f"{payload['enrollment']}/{payload['maximumEnrollment']} Seats"
     if (payload['waitCapacity']):
@@ -38,7 +43,10 @@ async def send_discord_update(payload: dict[str, str], *args, **kwargs) -> None:
     )
     embed.add_field(name='Schedule Type', value=payload['scheduleTypeDescription'], inline=True)
     embed.add_field(name='CRN', value=payload['courseReferenceNumber'], inline=True)
-    embed.add_field(name='Meeting Times', value=meeting_times, inline=False)
+    embed.add_field(name='Section', value=payload['sequenceNumber'], inline=True)
+
+
+    embed.add_field(name='Meeting Times', value=f'{meeting_times}\n{time}', inline=False)
     embed.add_field(name='Status', value=status, inline=False)
 
     await send_discord_webhook(embed)

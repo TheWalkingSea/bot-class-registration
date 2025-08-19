@@ -173,6 +173,7 @@ async def main(courses: list[str]) -> None:
                 # input("Press Enter to continue...")
             
             await asyncio.sleep(1) # Avoid rate limiting issues
+            
 if __name__ == '__main__':
     with open('config.json', 'r') as f:
         config = json.load(f)
