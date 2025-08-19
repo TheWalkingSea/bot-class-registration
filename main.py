@@ -64,13 +64,6 @@ class ClassLookup:
         )
         js = await response.json()
         # print(f"Response for {course_code}: {js}")
-<<<<<<< HEAD
-        if (not js or not js['data']): 
-            print(f"No data found for {course_code}. Retrying...")
-            asyncio.sleep(10)
-            return await self.search_course(course_code)
-=======
->>>>>>> b6e26ab3fc80a1c616cd0fed036f2210d5cd6363
         return js['data']
         
 
@@ -106,7 +99,7 @@ async def main(courses: list[str]) -> None:
             for course in courses:
                 try:
                     class_data = await cl.search_course(course)
-                    if (not class_data and before_data.get(course)): # Make sure data is not already populated
+                    if ((not class_data and before_data.get(course)) or class_data == None): # Make sure data is not already populated
                         print(f"No data found for {course}. Retrying...")
                         continue # Retries on next iteration
                 except Exception as e:
